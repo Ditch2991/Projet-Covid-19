@@ -1,0 +1,172 @@
+---
+title: "Document Quarto Application Covid 19"
+author: "Adama SANOGO & Ditchaba YEO"
+date: "2024-05-21"
+format: pdf
+editor: visual
+---
+
+```{r setup, include=FALSE}
+
+# Définir les options globales pour tous les chunks de code pour supprimer les messages d'erreur
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE
+)
+```
+
+*Description des données*
+
+**Chargement des données et affichage des premières lignes**
+
+```{r}
+library("tidyverse")
+world_covid_19 <- read_delim("C:/Ditch/DATA SCIENCE/R/Projet_Shiny_App/App_Shiny/App_Shiny/data/covid_19_clean_complete.csv",
+                             delim = ",", na = c(""))
+head(world_covid_19)
+```
+
+**Description :**
+
+-   Province/State: Entités administratives ou Etats d'Etats Fédéraux(USA) ou possédant des térritoires extérieurs(France)
+
+-   Country/Region : Les pays du monde
+
+-   Lat : La latitude(coordonnée géographique)
+
+-   Long : La longitude(coordonnée géographique)
+
+-   Date : Dates auxquelles les données sont enregistrées
+
+-   Confirmed : Le nombre de personnes ayant fait la maladie du Covid 19
+
+-   Deaths : Le nombre de personnes décédées de la maladie du Covid 19
+
+-   Recovered : Le nombre de personnes guéries de la maladie du Covid 19
+
+-   Active : Le nombre de personnes faisant la maladie du Covid 19
+
+-   WHO Region: Les différentes régions selon le découpage de l'OMS
+
+**Problématique :** Notre objectif est de fournir un outils utile pour comprendre l'évolution de la propagation de la maladie du Covid 19 tant aux niveaux étatiques, continentaux, régionaux et mondiaux; suivre les tendances et les statistiques, et prendre des décisions informées pour la santé publique.
+
+**Résumé statistique :**
+
+```{r}
+summary(world_covid_19)
+```
+
+Le résumé statistique ci-dessus nous donne un aperçu des mesures centrales et de la dispersion des différentes variables du jeu de données.
+
+**Traitement des données :**
+
+modifions la position de la variable "Date" avec relocate()
+
+```{r}
+world_covid_19 <-
+  world_covid_19 |>
+  relocate(Date, .before = 'Province/State')
+#Affichage de world_world_19
+head(world_covid_19)
+```
+
+*Repéresenter graphiquement les différentes variables pour repérer celles qui possèdent trop de valeurs manquantes en vue de les traiter.*
+
+```{r}
+library(dlookr)
+plot_na_pareto(world_covid_19)
+```
+
+**On voit que seule la variable `Province/State` a des données manquantes et en quantité importante, le nombre exact est 34404. Soit on supprime ou on laisse. La suppression ne va pas poser de problème car on a la longitude et la latitude des lieux. Dans la suite de notre travail, pour les Etats fédéraux nous utiliserons les *moyennes* des variables *Lat*** **et** ***Long*** **en lieu et place des valeurs de Lat et Long.**
+
+**Suppression de la variable `Province/State`.**
+
+```{r}
+new_world_covid_19 <- world_covid_19[,-2]
+```
+
+**Nous allons regrouper en fonction des continents le nombre total de: décès, de cas confirmés, de guéris et d'actifs**
+
+```{r}
+(total_continent <-
+new_world_covid_19 |>
+  group_by(`WHO Region`) |>
+  summarise(Total_Confirmed = sum(Confirmed, na.rm = TRUE),
+            Total_Deaths = sum(Deaths, na.rm = TRUE),
+            Total_Recovered = sum(Recovered, na.rm = TRUE),
+            Total_Active = sum(Active, na.rm = TRUE),
+            ))
+```
+
+**Regrouper en fonction des pays le nombre total de : décès, de cas confirmés, de guéris, non guéris et d'actifs**
+
+```{r}
+(total_country <- 
+  new_world_covid_19 |>
+  group_by(`Country/Region`) |>
+  summarise(Total_Confirmed = sum(Confirmed, na.rm = TRUE),
+            Total_Deaths = sum(Deaths, na.rm = TRUE),
+            Total_Recovered = sum(Recovered, na.rm = TRUE),
+            Total_Active = sum(Active, na.rm = TRUE),
+            ))
+```
+
+**Visualisation :**
+
+Maintenant nous pouvons faire la visualisation des données à partir de la construction de graphiques et de cartes
+
+**Exemple du code de la carte présentant les cas confirmés par pays dans le monde**
+
+```{r}
+library(leaflet)
+
+data1 <- world_covid_19 |>
+  group_by(`Country/Region`) |>
+  summarise(
+    latitude = mean(Lat, na.rm = TRUE),
+    longitude = mean(Long, na.rm = TRUE),
+    confirmed_total = sum(Confirmed, na.rm = TRUE))
+
+ma_carte_0 <- 
+  leaflet() |>
+  addTiles() |>
+  setView(lng = 0, lat = 30, zoom = 2)
+
+ma_carte <- 
+  ma_carte_0 |> 
+  addCircleMarkers(
+    data = data1,
+    lng = ~longitude,
+    lat = ~latitude,
+    color = "red",
+    popup = ~paste(
+      `Country/Region`, "<br>",
+      "Cas confirmés:", confirmed_total),
+    clusterOptions = markerClusterOptions(),
+    radius = 5
+  )  
+```
+
+```{r}
+image_path <- "C:/Ditch/DATA SCIENCE/R/Projet_Shiny_App/graphe.jpg"
+knitr::include_graphics(image_path)
+```
+
+**Utilité et intérêt de l'application :**
+
+Notre application vise à fournir plusieurs fonctionnalités clées :
+
+-   Suivi des cas confirmés, des décès et des guérisons dans le monde entier.
+
+-   Visualisation des données sur les cartes et les graphiques pour mieux comprendre la propagation du virus
+
+-   Analyse des tendances et des modèles pour aider à prévoir les futures évolutions de la pandémie.
+
+**Présentation de l'application:**
+
+Notre application se présente comme une interface simple. Avec ses menus rangés horizontalement de la gauche vers la droite, et ses sous-sections accécibles grâce aux onglets, elle donne la possibilité de faire des filtres et des options pour affiner les données affichées selon les besoins de l'utilsateur.
+
+**Liens de l'application:**  <https://yditchaba.shinyapps.io/App_Shiny/>
+
+**Source des données:** <https://www.kaggle.com/datasets/imdevskp/corona-virus-report>

@@ -1,0 +1,12 @@
+name: App_Shiny
+title: App_Shiny
+username: yditchaba
+account: yditchaba
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12038175
+bundleId: 8639689
+url: https://yditchaba.shinyapps.io/App_Shiny/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
